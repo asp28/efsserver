@@ -1,12 +1,13 @@
 package uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PermissionRequest {
 
     private Long fileID;
 
-    private ArrayList<String> permissiontypes;
+    private HashMap<String, String> permissiontypes;
 
     private Long userID;
 
@@ -18,11 +19,11 @@ public class PermissionRequest {
         this.fileID = fileID;
     }
 
-    public ArrayList<String> getPermissiontypes() {
+    public HashMap<String, String> getPermissiontypes() {
         return permissiontypes;
     }
 
-    public void setPermissiontypes(ArrayList<String> permissiontypes) {
+    public void setPermissiontypes(HashMap<String, String> permissiontypes) {
         this.permissiontypes = permissiontypes;
     }
 

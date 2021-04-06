@@ -2,9 +2,12 @@ package uk.co.ankeetpatel.encryptedfilesystem.efsserver.models;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.persistence.*;
 import java.util.Date;
 
+@JsonIgnoreProperties(value = {"publicKey", "privateKey"})
 @Entity
 @Table(name = "Files")
 public class File {
