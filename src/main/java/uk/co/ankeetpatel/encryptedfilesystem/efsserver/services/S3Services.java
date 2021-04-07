@@ -1,4 +1,4 @@
-package uk.co.ankeetpatel.encryptedfilesystem.efsserver.security.services;
+package uk.co.ankeetpatel.encryptedfilesystem.efsserver.services;
 
 public interface S3Services {
     public void downloadFile(String keyName);

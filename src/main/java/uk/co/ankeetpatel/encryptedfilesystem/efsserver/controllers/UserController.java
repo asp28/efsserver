@@ -14,6 +14,7 @@ import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.RolesReq
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.SignupRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.responses.MessageResponse;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.repository.UserRepository;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.UserService;
 
 import javax.validation.Valid;
 import java.util.*;
@@ -23,7 +24,7 @@ import java.util.*;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Autowired
     private PasswordEncoder encoder;
@@ -31,19 +32,19 @@ public class UserController {
     @PreAuthorize("hasAnyRole('[moderator, admin, superadmin]')")
     @GetMapping("users")
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userService.findAll();
     }
 
     @PreAuthorize("hasRole('MODERATOR')")
     @PostMapping("add")
     public ResponseEntity<?> addUser(@RequestBody SignupRequest signupRequest) {
-        if (userRepository.existsByUsername(signupRequest.getUsername())) {
+        if (userService.existsByUsername(signupRequest.getUsername())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Username is already taken!"));
         }
 
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+        if (userService.existsByEmail(signupRequest.getEmail())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
@@ -78,17 +79,17 @@ public class UserController {
         }
         user.setRoles(roles);
         user.setDateCreated(new Date());
-        this.userRepository.save(user);
+        this.userService.save(user);
         return ResponseEntity.ok(new MessageResponse("User added."));
     }
 
     @PostMapping("roles")
     public User editRole(@Valid @RequestBody RolesRequest rolesRequest) {
-        User user = userRepository.findByUsername(rolesRequest.getUsername());
+        User user = userService.findByUsername(rolesRequest.getUsername());
         for (Map.Entry s : rolesRequest.getRoles().entrySet()) {
             switch (s.getKey().toString()) {
                 case "mod":
-                    if (hasRoleAdmin() || hasRoleSuperAdmin()) {
+                    if (userService.hasRoleAdmin() || userService.hasRoleSuperAdmin()) {
                         if (s.getValue().toString().equals("false")) {
                             user.getRoles().remove(Role.ROLE_MODERATOR);
                         } else {
@@ -97,7 +98,7 @@ public class UserController {
                     }
                     break;
                 case "admin":
-                    if(hasRoleSuperAdmin()) {
+                    if(userService.hasRoleSuperAdmin()) {
                         if (s.getValue().toString().equals("false")) {
                             user.getRoles().remove(Role.ROLE_ADMIN);
                         } else {
@@ -110,23 +111,10 @@ public class UserController {
                     break;
             }
         }
-        userRepository.save(user);
+        userService.save(user);
         return user;
     }
 
-    @PreAuthorize("hasRole('mod')")
-    private boolean hasRoleMod() {
-        return true;
-    }
 
-    @PreAuthorize("hasRole('admin')")
-    private boolean hasRoleAdmin() {
-        return true;
-    }
-
-    @PreAuthorize("hasRole('superadmin')")
-    private boolean hasRoleSuperAdmin() {
-        return true;
-    }
 
 }

@@ -1,4 +1,4 @@
-package uk.co.ankeetpatel.encryptedfilesystem.efsserver.security.services;
+package uk.co.ankeetpatel.encryptedfilesystem.efsserver.services;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
