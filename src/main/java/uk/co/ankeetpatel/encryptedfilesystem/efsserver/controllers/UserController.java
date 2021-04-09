@@ -13,6 +13,7 @@ import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.User;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.RolesRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.SignupRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.responses.MessageResponse;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.responses.UserRolesResponse;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.repository.UserRepository;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.UserService;
 
@@ -84,7 +85,7 @@ public class UserController {
     }
 
     @PostMapping("roles")
-    public User editRole(@Valid @RequestBody RolesRequest rolesRequest) {
+    public ResponseEntity<?> editRole(@Valid @RequestBody RolesRequest rolesRequest) {
         User user = userService.findByUsername(rolesRequest.getUsername());
         for (Map.Entry s : rolesRequest.getRoles().entrySet()) {
             switch (s.getKey().toString()) {
@@ -112,7 +113,18 @@ public class UserController {
             }
         }
         userService.save(user);
-        return user;
+        return ResponseEntity.ok(new MessageResponse("Roles updated."));
+    }
+
+    @GetMapping("/{username}/roles")
+    public ResponseEntity<?> getRolesForUser(@PathVariable String username) {
+        User user = userService.findByUsername(username);
+
+        ArrayList<String> roles = new ArrayList<>();
+        for (Role r : user.getRoles()) {
+            roles.add(r.getAuthority());
+        }
+        return ResponseEntity.ok(new UserRolesResponse(roles));
     }
 
 

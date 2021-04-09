@@ -60,4 +60,9 @@ public class UserService {
         return userRepository.findById(id);
     }
 
+    @PreAuthorize("hasAnyRole('[ROLE_MODERATOR, ROLE_ADMIN, ROLE_SUPERADMIN]')")
+    public User getById(long id) {
+        return userRepository.getOne(id);
+    }
+
 }

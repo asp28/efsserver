@@ -136,32 +136,38 @@ public class FileController {
     @PostMapping("/download")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> downloadFile(@Valid @RequestBody DownloadRequest downloadRequest) {
-        File chosenFile;
-        chosenFile = fileService.returnFileIfTheyCanRead(downloadRequest.getId());
+        System.out.println("WORKING");
+        File chosenFile = fileService.returnFileIfTheyCanRead(downloadRequest.getId());
+        System.out.println("FILE GOTTEN");
 
-        if (chosenFile != null) {
-            s3Services.downloadFile(downloadRequest.getId() + ".txt");
-            try {
-                java.io.File file = new java.io.File("src/main/java/files/" + downloadRequest.getId() + ".txt");
-                FileInputStream fis = new FileInputStream(file);
-                ObjectInputStream ois = new ObjectInputStream(fis);
-                AWSObject obj = (AWSObject) ois.readObject();
+        s3Services.downloadFile(downloadRequest.getId() + ".txt");
+        System.out.println("FILE DOWNLOADED FROM AWS S3");
+        try {
+            java.io.File file = new java.io.File("src/main/java/files/" + downloadRequest.getId() + ".txt");
+            System.out.println("1");
+            FileInputStream fis = new FileInputStream(file);
+            System.out.println("2");
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            System.out.println("3");
+            AWSObject obj = (AWSObject) ois.readObject();
+            System.out.println("4");
 
-                byte[] decoded = cipherUtility.decryption(obj.getFile(), cipherUtility.decodePrivateKey(chosenFile.getPrivateKey()));
-                ArrayList<byte[]> encoded = cipherUtility.encryption(decoded, cipherUtility.decodePublicKey(downloadRequest.getPublicKey()));
+            byte[] decoded = cipherUtility.decryption(obj.getFile(), cipherUtility.decodePrivateKey(chosenFile.getPrivateKey()));
+            System.out.println("5");
+            ArrayList<byte[]> encoded = cipherUtility.encryption(decoded, cipherUtility.decodePublicKey(downloadRequest.getPublicKey()));
+            System.out.println("6");
+            ois.close();
+            System.out.println("7");
+            fis.close();
+            System.out.println("8");
+            file.delete();
+            System.out.println("9");
 
-                ois.close();
-                fis.close();
-                file.delete();
-
-                return ResponseEntity.ok(new DownloadResponse(downloadRequest.getId(), encoded, obj.getOriginalName()));
-            } catch (IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException e) {
-                e.printStackTrace();
-            }
-            return ResponseEntity.ok(new MessageResponse("File downloaded."));
-        } else {
-            return ResponseEntity.ok(new MessageResponse("File ID not found."));
+            return ResponseEntity.ok(new DownloadResponse(downloadRequest.getId(), encoded, obj.getOriginalName()));
+        } catch (IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException e) {
+            e.printStackTrace();
         }
+        return ResponseEntity.ok(new MessageResponse("File downloaded."));
         //return ResponseEntity.ok(new MessageResponse("Error: Download request corrupted."));
     }
 
@@ -196,19 +202,17 @@ public class FileController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getFile(@PathVariable long id, Authentication authentication) throws NoAccessToFileException {
         File file = fileService.returnFileIfTheyCanRead(id);
-        ArrayList<Integer> allowedPermissions = (ArrayList<Integer>) permissionService.getPermissions(fileService.findById(id).get(), authentication);
+        ArrayList<Integer> allowedPermissions = (ArrayList<Integer>) permissionService.getPermissions(fileService.findById(id), authentication);
         FilesResponse response = new FilesResponse(file, allowedPermissions);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteFile(@PathVariable("id") long id) {
-        Optional<File> file = fileService.findById(id);
-        if (file.isPresent()) {
-            fileService.delete(file.get());
-            return ResponseEntity.ok(new MessageResponse("File deleted."));
-        }
-        return ResponseEntity.ok(new MessageResponse("File not found."));
+    public ResponseEntity<?> deleteFile(@PathVariable("id") long id) throws NoAccessToFileException {
+        File file = fileService.findById(id);
+
+        fileService.delete(file);
+        return ResponseEntity.ok(new MessageResponse("File deleted."));
     }
 
     @PostMapping("userpermissions")

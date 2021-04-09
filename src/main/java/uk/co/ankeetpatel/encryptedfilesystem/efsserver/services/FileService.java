@@ -10,6 +10,7 @@ import uk.co.ankeetpatel.encryptedfilesystem.efsserver.Exception.NoAccessToFileE
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.File;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.repository.FileRepository;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,19 +20,34 @@ public class FileService {
     @Autowired
     FileRepository fileRepository;
 
-    @PreAuthorize("hasPermission(returnObject, 'read')")
+    @PostAuthorize("hasPermission(returnObject, 'READ')")
     public File returnFileIfTheyCanRead(long id) {
-        return fileRepository.getOne(id);
+        Optional<File> optionalFile = fileRepository.findById(id);
+        if (optionalFile.isPresent()) {
+            return optionalFile.get();
+        }else {
+            return null;
+        }
     }
 
-    @PreAuthorize("hasPermission(returnObject, 'write')")
+    @PostAuthorize("hasPermission(returnObject, 'WRITE')")
     public File returnFileIfTheyCanWrite(long id) {
-        return fileRepository.getOne(id);
+        Optional<File> optionalFile = fileRepository.findById(id);
+        if (optionalFile.isPresent()) {
+            return optionalFile.get();
+        }else {
+            return null;
+        }
     }
 
-    @PreAuthorize("hasPermission(returnObject, 'delete')")
+    @PostAuthorize("hasPermission(returnObject, 'DELETE')")
     public File returnFileIfTheyCanDelete(long id) {
-        return fileRepository.getOne(id);
+        Optional<File> optionalFile = fileRepository.findById(id);
+        if (optionalFile.isPresent()) {
+            return optionalFile.get();
+        }else {
+            return null;
+        }
     }
 
     @PostAuthorize("hasPermission(returnObject, 'ADMINISTRATION')")
@@ -45,18 +61,23 @@ public class FileService {
     }
 
 
-    @PostFilter("hasPermission(filterObject, 'read') or hasPermission(filterObject, 'write')")
+    @PostFilter("hasPermission(filterObject, 'read') or hasPermission(filterObject, 'write') or hasPermission(filterObject, 'administration') or hasPermission(filterObject, 'delete')")
     public List<File> getAll() {
         return fileRepository.findAll();
     }
 
+    @PreAuthorize("hasAnyRole('[ROLE_USER, ROLE_MODERATOR, ROLE_ADMIN, ROLE_SUPERADMIN]')")
     public void save(File file) {
         fileRepository.save(file);
     }
 
-    @PreAuthorize("hasPermission(returnObject.get(), 'read')")
-    public Optional<File> findById(long id) {
-        return fileRepository.findById(id);
+    @PostAuthorize("hasPermission(returnObject, 'read')")
+    public File findById(long id) throws NoAccessToFileException {
+        Optional<File> file = fileRepository.findById(id);
+        if (file.isPresent()) {
+            return fileRepository.findById(id).get();
+        }
+        throw new NoAccessToFileException();
     }
 
     @PreAuthorize("hasPermission(#file, 'delete')")
