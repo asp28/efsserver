@@ -2,6 +2,7 @@ package uk.co.ankeetpatel.encryptedfilesystem.efsserver.controllers;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.Role;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.User;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.ChangePasswordRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.RolesRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.SignupRequest;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.responses.MessageResponse;
@@ -84,6 +86,20 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("User added."));
     }
 
+    @PostMapping("changepassword")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, Authentication authentication) {
+        User user = userService.findByUsername(authentication.getName());
+        if (changePasswordRequest.getId() == user.getId()) {
+            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
+            return ResponseEntity.ok(new MessageResponse("Password Changed."));
+        }else if (user.getRoles().contains("ROLE_MODERATOR") || user.getRoles().contains("ROLE_ADMIN") ||user.getRoles().contains("ROLE_SUPERADMIN")) {
+            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
+            return ResponseEntity.ok(new MessageResponse("Password Changed."));
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+
     @PostMapping("roles")
     public ResponseEntity<?> editRole(@Valid @RequestBody RolesRequest rolesRequest) {
         User user = userService.findByUsername(rolesRequest.getUsername());
@@ -92,23 +108,33 @@ public class UserController {
                 case "mod":
                     if (userService.hasRoleAdmin() || userService.hasRoleSuperAdmin()) {
                         if (s.getValue().toString().equals("false")) {
-                            user.getRoles().remove(Role.ROLE_MODERATOR);
+                            if(user.getRoles().contains(Role.ROLE_MODERATOR)) {
+                                user.getRoles().remove(Role.ROLE_MODERATOR);
+                            }
                         } else {
-                            user.getRoles().add(Role.ROLE_MODERATOR);
+                            if (!user.getRoles().contains(Role.ROLE_MODERATOR)) {
+                                user.getRoles().add(Role.ROLE_MODERATOR);
+                            }
                         }
                     }
                     break;
                 case "admin":
                     if(userService.hasRoleSuperAdmin()) {
                         if (s.getValue().toString().equals("false")) {
-                            user.getRoles().remove(Role.ROLE_ADMIN);
+                            if(user.getRoles().contains(Role.ROLE_ADMIN)) {
+                                user.getRoles().remove(Role.ROLE_ADMIN);
+                            }
                         } else {
-                            user.getRoles().add(Role.ROLE_ADMIN);
+                            if(!user.getRoles().contains(Role.ROLE_ADMIN)) {
+                                user.getRoles().add(Role.ROLE_ADMIN);
+                            }
                         }
                     }
                     break;
                 case "superadmin":
-                    user.getRoles().add(Role.ROLE_SUPERADMIN);
+                    if (!user.getRoles().contains(Role.ROLE_SUPERADMIN)) {
+                        user.getRoles().add(Role.ROLE_SUPERADMIN);
+                    }
                     break;
             }
         }
@@ -119,12 +145,14 @@ public class UserController {
     @GetMapping("/{username}/roles")
     public ResponseEntity<?> getRolesForUser(@PathVariable String username) {
         User user = userService.findByUsername(username);
-
-        ArrayList<String> roles = new ArrayList<>();
-        for (Role r : user.getRoles()) {
-            roles.add(r.getAuthority());
+        if (user != null) {
+            ArrayList<String> roles = new ArrayList<>();
+            for (Role r : user.getRoles()) {
+                roles.add(r.getAuthority());
+            }
+            return ResponseEntity.ok(new UserRolesResponse(roles));
         }
-        return ResponseEntity.ok(new UserRolesResponse(roles));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
     }
 
 

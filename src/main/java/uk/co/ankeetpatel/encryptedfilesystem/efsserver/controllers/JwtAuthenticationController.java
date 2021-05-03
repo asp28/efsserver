@@ -42,6 +42,11 @@ public class JwtAuthenticationController {
     @Autowired
     private PasswordEncoder encoder;
 
+    @GetMapping("/test")
+    public ResponseEntity<?> test() {
+        return ResponseEntity.ok(new MessageResponse("WORKING"));
+    }
+
 
     @RequestMapping(value = "signin", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) throws Exception {
