@@ -16,3 +16,8 @@ A Live version is available at https://www.ankeetpatel.co.uk:8080/api/auth/test 
 
 
 This application was built to run alongside a client-side desktop application. Project was made for a Final Year Project at the University Of Sussex.
+
+## Details
+
+Postgres login details can be found in the server application.properties
+Login details can be found in the readme for the desktop application
