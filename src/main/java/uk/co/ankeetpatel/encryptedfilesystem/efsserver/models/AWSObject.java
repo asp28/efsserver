@@ -4,16 +4,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
- * AWSObject held on S3 bucket
+ * AWS S3 Object to upload
  */
 public class AWSObject implements Serializable {
 
     private ArrayList<byte[]> file;
 
-    private final String originalName;
+    private String originalName;
 
     /**
-     *
+     * Contructor
      * @param file
      * @param originalName
      */
@@ -22,28 +22,19 @@ public class AWSObject implements Serializable {
         this.originalName = originalName;
     }
 
-    /**
-     *
-     * @return ArrayList<byte[]>
-     */
     public ArrayList<byte[]> getFile() {
         return file;
     }
 
-    /**
-     *
-     * @param file
-     */
     public void setFile(ArrayList<byte[]> file) {
         this.file = file;
     }
 
-    /**
-     *
-     * @return String
-     */
     public String getOriginalName() {
         return originalName;
     }
 
+    public void setOriginalName(String originalName) {
+        this.originalName = originalName;
+    }
 }
