@@ -1,9 +1,10 @@
 # efsserver
 
-##Requirements
+## Requirements
 
-- [Java-11] 
-- [Maven]
+- Java-11
+- Maven
+- IntelliJ Ultimate 2020
 
 ## Running Server
 
