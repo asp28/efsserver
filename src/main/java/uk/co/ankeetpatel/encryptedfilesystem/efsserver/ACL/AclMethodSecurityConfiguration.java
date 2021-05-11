@@ -6,6 +6,9 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 
+/**
+ * Enabling Global security and pre post annotations
+ */
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class AclMethodSecurityConfiguration extends GlobalMethodSecurityConfiguration {
@@ -13,6 +16,10 @@ public class AclMethodSecurityConfiguration extends GlobalMethodSecurityConfigur
     @Autowired
     MethodSecurityExpressionHandler defaultMethodSecurityExpressionHandler;
 
+    /**
+     *
+     * @return defaultMethodSecurityExpressionHandler
+     */
     @Override
     protected MethodSecurityExpressionHandler createExpressionHandler() {
         return defaultMethodSecurityExpressionHandler;

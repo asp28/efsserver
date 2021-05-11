@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * User entity
+ */
 @Entity
 @Table(name = "Users")
 public class User {
@@ -40,8 +43,18 @@ public class User {
     @ElementCollection(fetch = FetchType.EAGER)
     List<Role> roles;
 
+    /**
+     * Default contructor
+     */
     public User() {}
 
+    /**
+     *
+     * @param name
+     * @param username
+     * @param email
+     * @param password
+     */
     public User(String name, String username, String email, String password) {
         this.name = name;
         this.username = username;
@@ -49,66 +62,130 @@ public class User {
         this.password = password;
     }
 
+    /**
+     *
+     * @return String
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     *
+     * @param username
+     */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /**
+     *
+     * @return String
+     */
     public String getPassword() {
         return password;
     }
 
+    /**
+     *
+     * @param password
+     */
     public void setPassword(String password) {
         this.password = password;
     }
 
+    /**
+     *
+     * @return Long
+     */
     public Long getId() {
         return id;
     }
 
+    /**
+     *
+     * @param id
+     */
     public void setId(Long id) {
         this.id = id;
     }
 
+    /**
+     *
+     * @return String
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     *
+     * @param email
+     */
     public void setEmail(String email) {
         this.email = email;
     }
 
+    /**
+     *
+     * @return String
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     *
+     * @param name
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     *
+     * @return Date
+     */
     public Date getDateCreated() {
         return dateCreated;
     }
 
+    /**
+     *
+     * @param dateCreated
+     */
     public void setDateCreated(Date dateCreated) {
         this.dateCreated = dateCreated;
     }
 
+    /**
+     *
+     * @return Date
+     */
     public Date getDateUpdated() {
         return dateUpdated;
     }
 
+    /**
+     *
+     * @param dateUpdated
+     */
     public void setDateUpdated(Date dateUpdated) {
         this.dateUpdated = dateUpdated;
     }
 
+    /**
+     *
+     * @return List<Role>
+     */
     public List<Role> getRoles() {
         return roles;
     }
 
+    /**
+     *
+     * @param roles
+     */
     public void setRoles(List<Role> roles) {
         this.roles = roles;
     }

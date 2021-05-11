@@ -22,6 +22,9 @@ import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.UserService;
 import javax.validation.Valid;
 import java.util.*;
 
+/**
+ * User controller for user specific methods
+ */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -32,15 +35,22 @@ public class UserController {
     @Autowired
     private PasswordEncoder encoder;
 
-    @PreAuthorize("hasAnyRole('[moderator, admin, superadmin]')")
+    /**
+     *
+     * @return all users
+     */
     @GetMapping("users")
     public List<User> getAllUsers() {
         return userService.findAll();
     }
 
-    @PreAuthorize("hasRole('MODERATOR')")
+    /**
+     *
+     * @param signupRequest
+     * @return Add user - requires mod+
+     */
     @PostMapping("add")
-    public ResponseEntity<?> addUser(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<?> addUser(@RequestBody SignupRequest signupRequest, Authentication authentication) {
         if (userService.existsByUsername(signupRequest.getUsername())) {
             return ResponseEntity
                     .badRequest()
@@ -63,19 +73,21 @@ public class UserController {
         if (strRoles == null) {
             roles.add(Role.ROLE_USER);
         } else {
+            roles.add(Role.ROLE_USER);
             strRoles.forEach(role -> {
                 switch (role) {
                     case "admin":
-                        roles.add(Role.ROLE_ADMIN);
-                        break;
-                    case "user":
-                        roles.add(Role.ROLE_USER);
+                        if (!roles.contains(Role.ROLE_ADMIN)) roles.add(Role.ROLE_ADMIN);
                         break;
                     case "superadmin":
-                        roles.add(Role.ROLE_SUPERADMIN);
+                        if (authentication.getAuthorities().contains(Role.ROLE_SUPERADMIN)) {
+                            if (!roles.contains(Role.ROLE_SUPERADMIN)) roles.add(Role.ROLE_SUPERADMIN);
+                        }
                         break;
                     case "mod":
-                        roles.add(Role.ROLE_MODERATOR);
+                        if (!roles.contains(Role.ROLE_MODERATOR)) roles.add(Role.ROLE_MODERATOR);
+                        break;
+                    case "user":
                         break;
                 }
             });
@@ -86,20 +98,11 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("User added."));
     }
 
-    @PostMapping("changepassword")
-    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, Authentication authentication) {
-        User user = userService.findByUsername(authentication.getName());
-        if (changePasswordRequest.getId() == user.getId()) {
-            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
-            return ResponseEntity.ok(new MessageResponse("Password Changed."));
-        }else if (user.getRoles().contains("ROLE_MODERATOR") || user.getRoles().contains("ROLE_ADMIN") ||user.getRoles().contains("ROLE_SUPERADMIN")) {
-            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
-            return ResponseEntity.ok(new MessageResponse("Password Changed."));
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
-
+    /**
+     *
+     * @param rolesRequest
+     * @return Completion message
+     */
     @PostMapping("roles")
     public ResponseEntity<?> editRole(@Valid @RequestBody RolesRequest rolesRequest) {
         User user = userService.findByUsername(rolesRequest.getUsername());
@@ -142,6 +145,11 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("Roles updated."));
     }
 
+    /**
+     *
+     * @param username
+     * @return UserRolesResponse
+     */
     @GetMapping("/{username}/roles")
     public ResponseEntity<?> getRolesForUser(@PathVariable String username) {
         User user = userService.findByUsername(username);
@@ -155,6 +163,16 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
     }
 
+    @PostMapping("changepassword")
+    public ResponseEntity<?> changepassword(@RequestBody ChangePasswordRequest changePasswordRequest, Authentication authentication) {
+        User user = userService.getById(changePasswordRequest.getId());
+        if (authentication.getAuthorities().contains(Role.ROLE_SUPERADMIN) && !user.getRoles().contains(Role.ROLE_SUPERADMIN)) {
+            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
+            userService.save(user);
+            return ResponseEntity.ok(new MessageResponse("User password updated."));
+        }
+        return ResponseEntity.ok(new MessageResponse("Failed to update password."));
+    }
 
 
 }

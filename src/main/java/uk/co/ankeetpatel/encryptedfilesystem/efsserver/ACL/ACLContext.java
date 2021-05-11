@@ -19,17 +19,28 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.sql.DataSource;
 
+/**
+ * ACL Context class to setup ACL functions
+ */
 @Configuration
 public class ACLContext {
 
     @Autowired
     DataSource dataSource;
 
+    /**
+     *
+     * @return new ehCacheBasedAclCache
+     */
     @Bean
     public EhCacheBasedAclCache aclCache() {
         return new EhCacheBasedAclCache(aclEhCacheFactoryBean().getObject(), permissionGrantingStrategy(), aclAuthorizationStrategy());
     }
 
+    /**
+     *
+     * @return ehCacheFactoryBean
+     */
     @Bean
     public EhCacheFactoryBean aclEhCacheFactoryBean() {
         EhCacheFactoryBean ehCacheFactoryBean = new EhCacheFactoryBean();
@@ -38,21 +49,37 @@ public class ACLContext {
         return ehCacheFactoryBean;
     }
 
+    /**
+     *
+     * @return EhCacheManagerFactoryBean
+     */
     @Bean
     public EhCacheManagerFactoryBean aclCacheManager() {
         return new EhCacheManagerFactoryBean();
     }
 
+    /**
+     *
+     * @return new DefaultPermissionGrantingStategy
+     */
     @Bean
     public PermissionGrantingStrategy permissionGrantingStrategy() {
         return new DefaultPermissionGrantingStrategy(new ConsoleAuditLogger());
     }
 
+    /**
+     *
+     * @return new AclAuthorizationStrategyImpl
+     */
     @Bean
     public AclAuthorizationStrategy aclAuthorizationStrategy() {
         return new AclAuthorizationStrategyImpl(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 
+    /**
+     *
+     * @return expressionHandler
+     */
     @Bean
     public MethodSecurityExpressionHandler defaultMethodSecurityExpressionHandler() {
         DefaultMethodSecurityExpressionHandler expressionHandler = new DefaultMethodSecurityExpressionHandler();
@@ -62,11 +89,19 @@ public class ACLContext {
         return expressionHandler;
     }
 
+    /**
+     *
+     * @return BasicLookupStrategy
+     */
     @Bean
     public LookupStrategy lookupStrategy() {
         return new BasicLookupStrategy(dataSource, aclCache(), aclAuthorizationStrategy(), new ConsoleAuditLogger());
     }
 
+    /**
+     *
+     * @return jdbcMutableAclService
+     */
     @Bean
     public JdbcMutableAclService aclService() {
         JdbcMutableAclService jdbcMutableAclService = new JdbcMutableAclService(dataSource, lookupStrategy(), aclCache());
@@ -74,10 +109,6 @@ public class ACLContext {
         // from documentation
         jdbcMutableAclService.setClassIdentityQuery("select currval(pg_get_serial_sequence('acl_class', 'id'))");
         jdbcMutableAclService.setSidIdentityQuery("select currval(pg_get_serial_sequence('acl_sid', 'id'))");
-
-        // additional adjustments
-        //jdbcMutableAclService.setObjectIdentityPrimaryKeyQuery("select acl_object_identity.id from acl_object_identity, acl_class where acl_object_identity.object_id_class = acl_class.id and acl_class.class=? and acl_object_identity.object_id_identity = cast(? as varchar)");
-        //jdbcMutableAclService.setFindChildrenQuery("select obj.object_id_identity as obj_id, class.class as class from acl_object_identity obj, acl_object_identity parent, acl_class class where obj.parent_object = parent.id and obj.object_id_class = class.id and parent.object_id_identity = cast(? as varchar) and parent.object_id_class = (select id FROM acl_class where acl_class.class = ?)");
 
         return jdbcMutableAclService;
     }

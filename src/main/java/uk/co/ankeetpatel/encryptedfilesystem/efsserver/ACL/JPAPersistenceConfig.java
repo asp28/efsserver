@@ -6,6 +6,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+/**
+ * JPA Base Config
+ */
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages = "uk.co.ankeetpatel.encryptedfilesystem.efsserver.repository")

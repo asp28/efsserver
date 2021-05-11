@@ -22,6 +22,9 @@ import uk.co.ankeetpatel.encryptedfilesystem.efsserver.security.jwt.JwtUserDetai
 import javax.validation.Valid;
 import java.util.*;
 
+/**
+ * JWT Entry controller
+ */
 @RestController
 @RequestMapping("/api/auth/")
 @CrossOrigin
@@ -47,7 +50,12 @@ public class JwtAuthenticationController {
         return ResponseEntity.ok(new MessageResponse("WORKING"));
     }
 
-
+    /**
+     *
+     * @param authenticationRequest
+     * @return New token +user details
+     * @throws Exception
+     */
     @RequestMapping(value = "signin", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) throws Exception {
 
@@ -64,6 +72,12 @@ public class JwtAuthenticationController {
                 userDetails.getAuthorities()));
     }
 
+    /**
+     *
+     * @param username
+     * @param password
+     * @throws Exception
+     */
     private void authenticate(String username, String password) throws Exception {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
@@ -73,52 +87,4 @@ public class JwtAuthenticationController {
             throw new Exception("INVALID_CREDENTIALS", e);
         }
     }
-
-    @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-        if (userRepository.existsByUsername(signupRequest.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Username is already taken!"));
-        }
-
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Email is already in use!"));
-        }
-
-        User user = new User(signupRequest.getName(), signupRequest.getUsername(),
-                signupRequest.getEmail(),
-                encoder.encode(signupRequest.getPassword()));
-
-        Set<String> strRoles = signupRequest.getRoles();
-        List<Role> roles = new ArrayList<>();
-
-        if (strRoles == null) {
-            roles.add(Role.ROLE_USER);
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        roles.add(Role.ROLE_ADMIN);
-                        break;
-                    case "user":
-                        roles.add(Role.ROLE_USER);
-                        break;
-                    case "superadmin":
-                        roles.add(Role.ROLE_SUPERADMIN);
-                        break;
-                    case "mod":
-                        roles.add(Role.ROLE_MODERATOR);
-                        break;
-                }
-            });
-        }
-        user.setRoles(roles);
-        user.setDateCreated(new Date());
-        userRepository.save(user);
-        return ResponseEntity.ok(new MessageResponse("User successfully created."));
-    }
-
 }

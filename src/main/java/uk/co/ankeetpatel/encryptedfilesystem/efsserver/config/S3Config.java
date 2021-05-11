@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * AWS S3 bucket config
+ */
 @Configuration
 public class S3Config {
 
@@ -21,7 +24,10 @@ public class S3Config {
     @Value("${amazon.s3.endpointUrl}")
     private String region;
 
-
+    /**
+     *
+     * @return s3Client
+     */
     @Bean
     public AmazonS3 s3client() {
 

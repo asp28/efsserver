@@ -11,27 +11,28 @@ public class PermissionRequest {
 
     private Long userID;
 
+    /**
+     *
+     * @return Long
+     */
     public Long getFileID() {
         return fileID;
     }
 
-    public void setFileID(Long fileID) {
-        this.fileID = fileID;
-    }
-
+    /**
+     *
+     * @return HashMap<String, String>
+     */
     public HashMap<String, String> getPermissiontypes() {
         return permissiontypes;
     }
 
-    public void setPermissiontypes(HashMap<String, String> permissiontypes) {
-        this.permissiontypes = permissiontypes;
-    }
-
+    /**
+     *
+     * @return Long
+     */
     public Long getUserID() {
         return userID;
     }
 
-    public void setUserID(Long userID) {
-        this.userID = userID;
-    }
 }

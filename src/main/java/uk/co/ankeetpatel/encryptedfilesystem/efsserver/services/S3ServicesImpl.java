@@ -30,6 +30,10 @@ public class S3ServicesImpl implements S3Services {
     @Value("${amazon.s3.bucketName}")
     private String bucketName;
 
+    /**
+     * AWS S3 Bucket download method
+     * @param keyName
+     */
     @Override
     public void downloadFile(String keyName) {
 
@@ -62,6 +66,11 @@ public class S3ServicesImpl implements S3Services {
         }
     }
 
+    /**
+     * AWS S3 Bucket Upload Method
+     * @param keyName
+     * @param uploadFilePath
+     */
     @Override
     public void uploadFile(String keyName, String uploadFilePath) {
 

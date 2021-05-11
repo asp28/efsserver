@@ -2,10 +2,7 @@ package uk.co.ankeetpatel.encryptedfilesystem.efsserver.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.acls.domain.GrantedAuthoritySid;
-import org.springframework.security.acls.domain.ObjectIdentityImpl;
-import org.springframework.security.acls.domain.PrincipalSid;
-import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
+import org.springframework.security.acls.domain.*;
 import org.springframework.security.acls.model.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -30,16 +27,37 @@ public class LocalPermissionService {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    /**
+     * Public update permission for user method
+     * @param targetObj
+     * @param permission
+     * @param username
+     * @param permissionType
+     */
     public void updatePermissionForUser(File targetObj, Permission permission, String username, boolean permissionType) {
         final Sid sid = new PrincipalSid(username);
         doUpdateOnPermissions(targetObj, permission, permissionType, sid);
     }
 
+    /**
+     * public update permission for role method
+     * @param targetObj
+     * @param permission
+     * @param authority
+     * @param permissionType
+     */
     public void updatePermissionForAuthority(File targetObj, Permission permission, String authority, boolean permissionType) {
         final Sid sid = new GrantedAuthoritySid(authority);
         doUpdateOnPermissions(targetObj, permission, permissionType, sid);
     }
 
+    /**
+     * Private call to check and update
+     * @param targetObj
+     * @param permission
+     * @param permissionType
+     * @param sid
+     */
     private void doUpdateOnPermissions(File targetObj, Permission permission, boolean permissionType, Sid sid) {
         Integer checkPermission = checkPermission(targetObj, permission, sid);
         if (permissionType && checkPermission == 1) {
@@ -61,6 +79,12 @@ public class LocalPermissionService {
         }
     }
 
+    /**
+     * Add permissions method
+     * @param targetObj
+     * @param permission
+     * @param sid
+     */
     @PreAuthorize("hasPermission(targetObj, 'ADMINISTRATION')")
     private void addPermissionForSid(File targetObj, Permission permission, Sid sid) {
         final TransactionTemplate tt = new TransactionTemplate(transactionManager);
@@ -82,6 +106,38 @@ public class LocalPermissionService {
         });
     }
 
+    /**
+     * Public call to generate the standard perms for a file
+     * @param targetObj
+     * @param username
+     */
+    public void generatePermissionsForFile(File targetObj, String username) {
+        Sid mod = new GrantedAuthoritySid("ROLE_MODERATOR");
+        Sid admin = new GrantedAuthoritySid("ROLE_ADMIN");
+        Sid superadmin = new GrantedAuthoritySid("ROLE_SUPERADMIN");
+        Sid user = new PrincipalSid(username);
+
+        addPermissionForSid(targetObj, BasePermission.ADMINISTRATION, mod);
+        addPermissionForSid(targetObj, BasePermission.ADMINISTRATION, admin);
+        addPermissionForSid(targetObj, BasePermission.READ, admin);
+        addPermissionForSid(targetObj, BasePermission.WRITE, admin);
+        addPermissionForSid(targetObj, BasePermission.DELETE, admin);
+        addPermissionForSid(targetObj, BasePermission.ADMINISTRATION, superadmin);
+        addPermissionForSid(targetObj, BasePermission.READ, superadmin);
+        addPermissionForSid(targetObj, BasePermission.WRITE, superadmin);
+        addPermissionForSid(targetObj, BasePermission.DELETE, superadmin);
+
+        addPermissionForSid(targetObj, BasePermission.ADMINISTRATION, user);
+        addPermissionForSid(targetObj, BasePermission.READ, user);
+        addPermissionForSid(targetObj, BasePermission.WRITE, user);
+    }
+
+    /**
+     * Remove permissions method
+     * @param targetObj
+     * @param permission
+     * @param sid
+     */
     @PreAuthorize("hasPermission(targetObj, 'ADMINISTRATION')")
     private void removePermissionForSid(File targetObj, Permission permission, Sid sid) {
         ObjectIdentity oi = new ObjectIdentityImpl(targetObj.getClass(), targetObj.getId());
@@ -102,6 +158,13 @@ public class LocalPermissionService {
         }
     }
 
+    /**
+     * Private call to check already existing perms
+     * @param targetObj
+     * @param permission
+     * @param sid
+     * @return Integer
+     */
     private Integer checkPermission(File targetObj, Permission permission, Sid sid) {
         ObjectIdentity oi = new ObjectIdentityImpl(targetObj.getClass(), targetObj.getId());
         try {
@@ -126,6 +189,12 @@ public class LocalPermissionService {
         return 3;
     }
 
+    /**
+     * Get permissions a user has on a file
+     * @param targetObj
+     * @param authentication
+     * @return List<Integer>
+     */
     public List<Integer> getPermissions(File targetObj, Authentication authentication) {
         final ObjectIdentity oid = new ObjectIdentityImpl(targetObj.getClass(), targetObj.getId());
 
@@ -145,6 +214,13 @@ public class LocalPermissionService {
         return permissionsList;
     }
 
+    /**
+     * Get permissions any user has on a file
+     * @param targetObj
+     * @param authentication
+     * @param user
+     * @return List<Integer>
+     */
     public List<Integer> getPermissionsForUser(File targetObj, Authentication authentication, User user) {
         final ObjectIdentity oid = new ObjectIdentityImpl(targetObj.getClass(), targetObj.getId());
 

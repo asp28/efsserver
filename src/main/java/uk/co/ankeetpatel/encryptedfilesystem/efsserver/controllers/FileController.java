@@ -3,20 +3,18 @@ package uk.co.ankeetpatel.encryptedfilesystem.efsserver.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.acls.domain.BasePermission;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.User;
-import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.*;
-import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.LocalPermissionService;
-import uk.co.ankeetpatel.encryptedfilesystem.efsserver.Exception.NoAccessToFileException;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.algorithms.CipherUtility;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.AWSObject;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.File;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.models.User;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.requests.*;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.payload.responses.*;
-import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.S3Services;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.FileService;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.LocalPermissionService;
+import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.S3Services;
 import uk.co.ankeetpatel.encryptedfilesystem.efsserver.services.UserService;
 
 import javax.crypto.BadPaddingException;
@@ -26,8 +24,15 @@ import javax.validation.Valid;
 import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * File Controller
+ * /api/files/*
+ */
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/files")
@@ -48,9 +53,12 @@ public class FileController {
     @Autowired
     LocalPermissionService permissionService;
 
-
+    /**
+     *
+     * @param authentication
+     * @return AllowedFilesResponse
+     */
     @GetMapping("/all")
-    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> allAccess(Authentication authentication) {
         List<File> files = fileService.getAll();
         ArrayList<FilesResponse> responses = new ArrayList<>();
@@ -61,9 +69,13 @@ public class FileController {
         return ResponseEntity.ok(new AllowedFilesResponse(responses));
     }
 
-    //Request key works - need to make the key dynamic...generate key and send
+    /**
+     *
+     * @param fileUploadRequest
+     * @param authentication
+     * @return FileUploadResponse
+     */
     @PostMapping("/upload/request")
-    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> uploadRequestFile(@Valid @RequestBody FileUploadRequest fileUploadRequest, Authentication authentication) {
         KeyPair keyPair = cipherUtility.getKeyPair();
         PublicKey publicKey;
@@ -78,19 +90,7 @@ public class FileController {
             file.setPrivateKey(cipherUtility.encodeKey(privateKey));
             fileService.save(file);
 
-            permissionService.updatePermissionForUser(file, BasePermission.READ, authentication.getName(), true);
-            permissionService.updatePermissionForUser(file, BasePermission.WRITE, authentication.getName(), true);
-            permissionService.updatePermissionForUser(file, BasePermission.ADMINISTRATION, authentication.getName(), true);
-
-            permissionService.updatePermissionForAuthority(file, BasePermission.ADMINISTRATION, "ROLE_MODERATOR", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.ADMINISTRATION, "ROLE_ADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.READ, "ROLE_ADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.WRITE, "ROLE_ADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.DELETE, "ROLE_ADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.ADMINISTRATION, "ROLE_SUPERADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.READ, "ROLE_SUPERADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.WRITE, "ROLE_SUPERADMIN", true);
-            permissionService.updatePermissionForAuthority(file, BasePermission.DELETE, "ROLE_SUPERADMIN", true);
+            permissionService.generatePermissionsForFile(file, authentication.getName());
 
             return ResponseEntity.ok(new FileUploadResponse(file.getId(), file.getPublicKey()));
         } catch (Exception e) {
@@ -100,9 +100,12 @@ public class FileController {
         return ResponseEntity.ok(new MessageResponse("Error: Could not generate new set of keys."));
     }
 
-
+    /**
+     *
+     * @param UploadRequest
+     * @return MessageResponse
+     */
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('[USER, MODERATOR, ADMIN, SUPERADMIN]')")
     public ResponseEntity<?> uploadFile(@Valid @RequestBody UploadRequest UploadRequest) {
         File chosenFile;
         chosenFile = fileService.returnFileIfTheyCanWrite(UploadRequest.getId());
@@ -133,46 +136,42 @@ public class FileController {
         return ResponseEntity.ok(new MessageResponse("Error uploading file. Try again."));
     }
 
+    /**
+     *
+     * @param downloadRequest
+     * @return DownloadResponse
+     */
     @PostMapping("/download")
-    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> downloadFile(@Valid @RequestBody DownloadRequest downloadRequest) {
-        System.out.println("WORKING");
         File chosenFile = fileService.returnFileIfTheyCanRead(downloadRequest.getId());
-        System.out.println("FILE GOTTEN");
 
         s3Services.downloadFile(downloadRequest.getId() + ".txt");
-        System.out.println("FILE DOWNLOADED FROM AWS S3");
         try {
             java.io.File file = new java.io.File("src/main/java/files/" + downloadRequest.getId() + ".txt");
-            System.out.println("1");
             FileInputStream fis = new FileInputStream(file);
-            System.out.println("2");
             ObjectInputStream ois = new ObjectInputStream(fis);
-            System.out.println("3");
             AWSObject obj = (AWSObject) ois.readObject();
-            System.out.println("4");
 
             byte[] decoded = cipherUtility.decryption(obj.getFile(), cipherUtility.decodePrivateKey(chosenFile.getPrivateKey()));
-            System.out.println("5");
             ArrayList<byte[]> encoded = cipherUtility.encryption(decoded, cipherUtility.decodePublicKey(downloadRequest.getPublicKey()));
-            System.out.println("6");
             ois.close();
-            System.out.println("7");
             fis.close();
-            System.out.println("8");
             file.delete();
-            System.out.println("9");
 
             return ResponseEntity.ok(new DownloadResponse(downloadRequest.getId(), encoded, obj.getOriginalName()));
         } catch (IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException e) {
             e.printStackTrace();
         }
-        return ResponseEntity.ok(new MessageResponse("File downloaded."));
-        //return ResponseEntity.ok(new MessageResponse("Error: Download request corrupted."));
+        return ResponseEntity.ok(new MessageResponse("File not downloaded."));
     }
 
+    /**
+     *
+     * @param permissionRequest
+     * @param authentication
+     * @return MessageResponse
+     */
     @PostMapping("/updatepermission")
-    @PreAuthorize("hasAnyRole('[USER, MODERATOR, ADMIN, SUPERADMIN]')")
     public ResponseEntity<?> addPermission(@Valid @RequestBody PermissionRequest permissionRequest, Authentication authentication) {
 
         File file = fileService.returnFileIfTheyCanAdmin(permissionRequest.getFileID());
@@ -199,22 +198,39 @@ public class FileController {
     }
 
 
+    /**
+     *
+     * @param id
+     * @param authentication
+     * @return FilesResponse
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getFile(@PathVariable long id, Authentication authentication) throws NoAccessToFileException {
-        File file = fileService.returnFileIfTheyCanRead(id);
+    public ResponseEntity<?> getFile(@PathVariable long id, Authentication authentication) {
+        File file = fileService.findById(id);
         ArrayList<Integer> allowedPermissions = (ArrayList<Integer>) permissionService.getPermissions(fileService.findById(id), authentication);
         FilesResponse response = new FilesResponse(file, allowedPermissions);
         return ResponseEntity.ok(response);
     }
 
+    /**
+     *
+     * @param id
+     * @return MessageResponse
+     */
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteFile(@PathVariable("id") long id) throws NoAccessToFileException {
+    public ResponseEntity<?> deleteFile(@PathVariable("id") long id) {
         File file = fileService.findById(id);
 
         fileService.delete(file);
         return ResponseEntity.ok(new MessageResponse("File deleted."));
     }
 
+    /**
+     *
+     * @param userPermissionRequest
+     * @param authentication
+     * @return UserPermissionsResponse
+     */
     @PostMapping("userpermissions")
     public ResponseEntity<?> getUserPermissions(@Valid @RequestBody UserPermissionRequest userPermissionRequest, Authentication authentication) {
         User user = userService.findByUsername(userPermissionRequest.getUsername());
@@ -223,6 +239,4 @@ public class FileController {
         return ResponseEntity.ok(new UserPermissionsResponse(user.getUsername(), permissions, file.getFileName(), file.getId(), user.getId()));
 
     }
-
-
 }

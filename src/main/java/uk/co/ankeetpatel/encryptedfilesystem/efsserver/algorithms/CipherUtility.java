@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 
+/**
+ * CipherUltility class to control all RSA key functions
+ */
 @Component
 public class CipherUtility {
 
@@ -22,10 +25,25 @@ public class CipherUtility {
 
     private final SecureRandom random = new SecureRandom();
 
+    /**
+     *
+     * @return new KeyPair
+     */
     public KeyPair getKeyPair() {
         return keyPairGenerator.genKeyPair();
     }
 
+    /**
+     *
+     * @param content
+     * @param pubKey
+     * @return cipherContent
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     * @throws BadPaddingException
+     * @throws IllegalBlockSizeException
+     */
     public byte[] encryptBytes(byte[] content, Key pubKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
@@ -33,6 +51,17 @@ public class CipherUtility {
         return cipherContent;
     }
 
+    /**
+     *
+     * @param cipherContent
+     * @param privKey
+     * @return decryptedContent
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     * @throws BadPaddingException
+     * @throws IllegalBlockSizeException
+     */
     public byte[] decryptBytes(byte[] cipherContent, Key privKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privKey);
@@ -40,6 +69,17 @@ public class CipherUtility {
         return decryptedContent;
     }
 
+    /**
+     *
+     * @param bytes
+     * @param privKey
+     * @return messageArray
+     * @throws IllegalBlockSizeException
+     * @throws InvalidKeyException
+     * @throws BadPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchPaddingException
+     */
     public byte[] decryption(ArrayList<byte[]> bytes, Key privKey) throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
         ArrayList<byte[]> decryptedByteList = new ArrayList<>();
         for (byte[] a : bytes) {
@@ -53,6 +93,17 @@ public class CipherUtility {
         return messageArray;
     }
 
+    /**
+     *
+     * @param byteFile
+     * @param pubKey
+     * @return encryptedByteList
+     * @throws IllegalBlockSizeException
+     * @throws InvalidKeyException
+     * @throws BadPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchPaddingException
+     */
     public ArrayList<byte[]> encryption(byte[] byteFile, Key pubKey) throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
         ArrayList<byte[]> byteArrays = new ArrayList<>();
 
@@ -68,6 +119,12 @@ public class CipherUtility {
         return encryptedByteList;
     }
 
+    /**
+     *
+     * @param a
+     * @param b
+     * @return Combined results
+     */
     public static byte[] combine(byte[] a, byte[] b) {
         int length = a.length + b.length;
         byte[] result = new byte[length];
@@ -76,12 +133,24 @@ public class CipherUtility {
         return result;
     }
 
+    /**
+     *
+     * @param key
+     * @return encodedKeyStr
+     */
     public String encodeKey(Key key) {
         byte[] keyBytes = key.getEncoded();
         String encodedKeyStr = Base64.getEncoder().encodeToString(keyBytes);
         return encodedKeyStr;
     }
 
+    /**
+     *
+     * @param keyStr
+     * @return PublicKey
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     */
     public PublicKey decodePublicKey(String keyStr) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] keyBytes = Base64.getDecoder().decode(keyStr);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
@@ -90,6 +159,13 @@ public class CipherUtility {
         return key;
     }
 
+    /**
+     *
+     * @param keyStr
+     * @return PrivateKey
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     */
     public PrivateKey decodePrivateKey(String keyStr) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] keyBytes = Base64.getDecoder().decode(keyStr);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -98,6 +174,9 @@ public class CipherUtility {
         return key;
     }
 
+    /**
+     * Init Method
+     */
     @PostConstruct
     public void init() {
         try {

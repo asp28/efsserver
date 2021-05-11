@@ -15,9 +15,17 @@ import java.util.Optional;
 @Repository
 public interface FileRepository extends JpaRepository<File, Long> {
 
-
+    /**
+     *
+     * @return List<File>
+     */
     List<File> findAll();
 
+    /**
+     *
+     * @param id
+     * @return Optional<File>
+     */
     Optional<File> findById(Long id);
 
 }
